@@ -4,7 +4,9 @@ Auth Service — JWT token creation, password hashing, user authentication.
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
+# pyrefly: ignore [missing-import]
 from pwdlib import PasswordHash
+# pyrefly: ignore [missing-import]
 from pwdlib.hashers.bcrypt import BcryptHasher
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
