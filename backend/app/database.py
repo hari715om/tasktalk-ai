@@ -4,12 +4,30 @@ from app.config import get_settings
 
 settings = get_settings()
 
+
+def _make_async_url(url: str) -> str:
+    """
+    Normalize database URL to always use async drivers.
+    - postgresql:// or postgres:// → postgresql+asyncpg://
+    - sqlite:///     → sqlite+aiosqlite:///
+    """
+    if url.startswith("postgresql://") or url.startswith("postgres://"):
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1).replace(
+            "postgres://", "postgresql+asyncpg://", 1
+        )
+    if url.startswith("sqlite:///"):
+        return url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    return url
+
+
+DATABASE_URL = _make_async_url(settings.database_url)
+
 # Support both SQLite (dev) and PostgreSQL (prod) transparently
 engine = create_async_engine(
-    settings.database_url,
+    DATABASE_URL,
     echo=False,
     future=True,
-    connect_args={"check_same_thread": False} if "sqlite" in settings.database_url else {},
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
 )
 
 AsyncSessionLocal = async_sessionmaker(
