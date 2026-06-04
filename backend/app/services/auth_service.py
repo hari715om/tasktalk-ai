@@ -4,6 +4,14 @@ Auth Service — JWT token creation, password hashing, user authentication.
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
+import bcrypt
+
+# Monkey-patch bcrypt for passlib compatibility (bcrypt 4.x removed __about__)
+if not hasattr(bcrypt, "__about__"):
+    class About:
+        __version__ = getattr(bcrypt, "__version__", "4.0.0")
+    bcrypt.__about__ = About
+
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
