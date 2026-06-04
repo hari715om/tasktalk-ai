@@ -21,6 +21,11 @@ const useStore = create((set, get) => ({
   orbState: 'idle',
   setOrbState: (orbState) => set({ orbState }),
 
+  // ── Continuous Session ───────────────────────────────────────────────
+  // true = conversation loop is active; mic re-opens automatically after each AI reply
+  sessionActive: false,
+  setSessionActive: (sessionActive) => set({ sessionActive }),
+
   // ── WebSocket ────────────────────────────────────────────────────────
   wsStatus: 'disconnected', // 'connecting' | 'connected' | 'disconnected'
   latency: null,

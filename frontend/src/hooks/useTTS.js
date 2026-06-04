@@ -3,10 +3,21 @@ import useStore from '../store/useStore'
 import { wsClient } from '../services/ws'
 
 export function useTTS() {
-  const { setOrbState } = useStore()
+  const { setOrbState, sessionActive } = useStore()
   const utteranceRef = useRef(null)
   const isSpeakingRef = useRef(false)
   const voiceRef = useRef(null)
+  // Keep a stable ref so the async onend callback always reads the latest value
+  const sessionActiveRef = useRef(sessionActive)
+  useEffect(() => { sessionActiveRef.current = sessionActive }, [sessionActive])
+
+  // Stable ref to startListening — injected by VoiceOrb after useVoice is initialized
+  const restartListeningRef = useRef(null)
+
+  // Allow VoiceOrb to register the startListening function
+  const registerRestart = useCallback((fn) => {
+    restartListeningRef.current = fn
+  }, [])
 
   // Pick the best available voice
   useEffect(() => {
@@ -59,7 +70,19 @@ export function useTTS() {
       isSpeakingRef.current = false
       utteranceRef.current = null
       setOrbState('idle')
+      // Call any explicit callback first (e.g. for CLARIFICATION auto-open)
       if (onEnd) onEnd()
+      // ── Continuous Session Loop ──────────────────────────────────────
+      // After AI finishes speaking, automatically re-open the mic if a
+      // session is still active. This is the core of the continuous loop.
+      if (sessionActiveRef.current && restartListeningRef.current) {
+        // Small gap so the mic doesn't pick up audio artifacts from TTS
+        setTimeout(() => {
+          if (sessionActiveRef.current) {
+            restartListeningRef.current()
+          }
+        }, 350)
+      }
     }
 
     utterance.onerror = (e) => {
@@ -69,6 +92,14 @@ export function useTTS() {
       isSpeakingRef.current = false
       utteranceRef.current = null
       setOrbState('idle')
+      // Still re-open mic on error if session is active
+      if (sessionActiveRef.current && restartListeningRef.current) {
+        setTimeout(() => {
+          if (sessionActiveRef.current) {
+            restartListeningRef.current()
+          }
+        }, 350)
+      }
     }
 
     utteranceRef.current = utterance
@@ -87,5 +118,5 @@ export function useTTS() {
 
   useEffect(() => () => stopSpeaking(), [stopSpeaking])
 
-  return { speak, stopSpeaking, isSpeaking }
+  return { speak, stopSpeaking, isSpeaking, registerRestart }
 }
