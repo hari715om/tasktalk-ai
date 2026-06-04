@@ -1,0 +1,15 @@
+import sqlite3
+conn = sqlite3.connect('tasktalk.db')
+c = conn.cursor()
+c.execute("SELECT name FROM sqlite_master WHERE type='table'")
+tables = c.fetchall()
+print("TABLES:", tables)
+c.execute("SELECT id, email, username FROM users")
+users = c.fetchall()
+print("USERS:", users)
+c.execute("SELECT id, user_id, title, status, task_date, task_time FROM tasks")
+tasks = c.fetchall()
+print(f"TASKS ({len(tasks)} total):")
+for t in tasks:
+    print(" ", t)
+conn.close()
